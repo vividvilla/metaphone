@@ -1,5 +1,6 @@
 // Doublemetaphone algorithm implementation extracted from library Matchr
 // matchr - https://raw.githubusercontent.com/antzucaro/matchr
+
 package metaphone
 
 import (

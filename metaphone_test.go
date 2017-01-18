@@ -93,15 +93,15 @@ func TestMetaphone(t *testing.T) {
 
 func TestMetaphoneWithMaxLength(t *testing.T) {
 	// should truncate to length specified if code exceeds
-	v := ProcessWithMaxLength("phonetics", 4)
+	v := MetaphoneWithMaxLength("phonetics", 4)
 	if v != "FNTK" {
-		t.Errorf("ProcessWithMaxLength(\"phonetics\", 4) = %s, expected %s.", v, "FNTK")
+		t.Errorf("MetaphoneWithMaxLength(\"phonetics\", 4) = %s, expected %s.", v, "FNTK")
 	}
 
 	// should not truncate to length specified if code does not exceed
-	v = ProcessWithMaxLength("phonetics", 8)
+	v = MetaphoneWithMaxLength("phonetics", 8)
 	if v != "FNTKS" {
-		t.Errorf("ProcessWithMaxLength(\"phonetics\", 8) = %s, expected %s.", v, "FNTKS")
+		t.Errorf("MetaphoneWithMaxLength(\"phonetics\", 8) = %s, expected %s.", v, "FNTKS")
 	}
 }
 

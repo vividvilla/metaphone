@@ -131,7 +131,8 @@ func dropVowels(token string) string {
 	return string(buffer.Bytes())
 }
 
-func ProcessWithMaxLength(token string, maxLength int) string {
+// MetaphoneWithMaxLength generates a phonetic string of given length for the input string
+func MetaphoneWithMaxLength(token string, maxLength int) string {
 	token = strings.ToLower(token)
 	token = dedup(token)
 	token = dropInitialLetters(token)
@@ -162,6 +163,9 @@ func ProcessWithMaxLength(token string, maxLength int) string {
 	return token
 }
 
+// Metaphone generates a phonetic string for given string based on metaphone algorithm.
+// The output phonetic string is of maximum length 32.
+// For custom wordlength use function MetaphoneWithMaxLength
 func Metaphone(token string) string {
-	return ProcessWithMaxLength(token, 32)
+	return MetaphoneWithMaxLength(token, 32)
 }
