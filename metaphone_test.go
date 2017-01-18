@@ -4,14 +4,20 @@
 
 package metaphone
 
-import "testing"
+import (
+	"bufio"
+	"compress/gzip"
+	"os"
+	"strings"
+	"testing"
+)
 
 type metaphoneTest struct {
-	fn func(string) string
+	fn            func(string) string
 	in, out, desc string
 }
 
-var metaphoneTests = []metaphoneTest {
+var metaphoneTests = []metaphoneTest{
 	metaphoneTest{dedup, "dropping", "droping", "should drop duplicate adjacent letters, except C"},
 	metaphoneTest{dedup, "accelerate", "accelerate", "should not drop duplicat C"},
 	metaphoneTest{dropInitialLetters, "knuth", "nuth", "should drop some initial letters"},
@@ -31,49 +37,49 @@ var metaphoneTests = []metaphoneTest {
 	metaphoneTest{dTransform, "bid", "bit", "should transform D to T if not followed by GE, GY, GI"},
 	metaphoneTest{dropG, "alight", "aliht", "should drop G before H if not at the end or before vowell"},
 	metaphoneTest{dropG, "fright", "friht", "should drop G before H if not at the end or before vowell"},
-  metaphoneTest{dropG, "aligned", "alined", "should drop G if followed by N or NED at the end"},
-  metaphoneTest{dropG, "align", "alin", "should drop G if followed by N or NED at the end"},
-  metaphoneTest{transformG, "age", "aje", "should transform G to J if followed by I, E or Y and not preceeded by G"},
-  metaphoneTest{transformG, "gin", "jin", "should transform G to J if followed by I, E or Y and not preceeded by G"},
-  metaphoneTest{transformG, "august", "aukust", "should transform G to K"},
-  metaphoneTest{transformG, "aggrade", "akrade", "should transform G to K"},
-  metaphoneTest{dropH, "alriht", "alrit", "should drop H if after vowell and not before vowell"},
-  metaphoneTest{dropH, "that", "that", "should not drop H if after vowell"},
-  metaphoneTest{dropH, "chump", "chump", "should not drop H if not before vowell"},
-  metaphoneTest{transformCK, "check", "chek", "should transform CK to K"},
-  metaphoneTest{transformPH, "phone", "fone", "should transform PH to F"},
-  metaphoneTest{transformQ, "quack", "kuack", "should transform Q to K"},
-  metaphoneTest{transformS, "shack", "xhack", "should transform S to X if followed by H, IO, or IA"},
-  metaphoneTest{transformS, "sialagogues", "xialagogues", "should transform S to X if followed by H, IO, or IA"},
-  metaphoneTest{transformS, "asia", "axia", "should transform S to X if followed by H, IO, or IA"},
-  metaphoneTest{transformS, "substance", "substance", "should not transform S to X if not followed by H, IO, or IA"},
-  metaphoneTest{transformT, "dementia", "demenxia", "should transform T to X if followed by IA or IO"},
-  metaphoneTest{transformT, "abbreviation", "abbreviaxion", "should transform T to X if followed by IA or IO"},
-  metaphoneTest{transformT, "that", "0at", "should transform TH to 0"},
-  metaphoneTest{dropT, "backstitch", "backstich", "should drop T if followed by CH"},
-  metaphoneTest{transformV, "vestige", "festige", "should transform V to F"},
-  metaphoneTest{dropW, "bowl", "bol", "should drop W if not followed by vowell"},
-  metaphoneTest{dropW, "warsaw", "warsa", "should drop W if not followed by vowell"},
-  metaphoneTest{transformX, "xenophile", "senophile", "should transform X to S if at beginning"},
-  metaphoneTest{transformX, "admixed", "admiksed", "should transform X to KS if not at beginning"},
-  metaphoneTest{dropY, "analyzer", "analzer", "should drop Y if not followed by a vowell"},
-  metaphoneTest{dropY, "specify", "specif", "should drop Y if not followed by a vowell"},
-  metaphoneTest{dropY, "allying", "allying", "should not drop Y if followed by a vowell"},
-  metaphoneTest{transformZ, "blaze", "blase", "should transform Z to S"},
-  metaphoneTest{dropVowels, "ablaze", "ablz", "should drop all vowels except initial"},
-  metaphoneTest{dropVowels, "adamantium", "admntm", "should drop all vowels except initial"},
-  metaphoneTest{Process, "ablaze", "ABLS", "should do all"},
-  metaphoneTest{Process, "transition", "TRNSXN", "should do all"},
-  metaphoneTest{Process, "astronomical", "ASTRNMKL", "should do all"},
-  metaphoneTest{Process, "buzzard", "BSRT", "should do all"},
-  metaphoneTest{Process, "wonderer", "WNTRR", "should do all"},
-  metaphoneTest{Process, "district", "TSTRKT", "should do all"},
-  metaphoneTest{Process, "hockey", "HK", "should do all"},
-  metaphoneTest{Process, "capital", "KPTL", "should do all"},
-  metaphoneTest{Process, "penguin", "PNKN", "should do all"},
-  metaphoneTest{Process, "garbonzo", "KRBNS", "should do all"},
-  metaphoneTest{Process, "lightning", "LTNNK", "should do all"},
-  metaphoneTest{Process, "light", "LT", "should do all"},
+	metaphoneTest{dropG, "aligned", "alined", "should drop G if followed by N or NED at the end"},
+	metaphoneTest{dropG, "align", "alin", "should drop G if followed by N or NED at the end"},
+	metaphoneTest{transformG, "age", "aje", "should transform G to J if followed by I, E or Y and not preceeded by G"},
+	metaphoneTest{transformG, "gin", "jin", "should transform G to J if followed by I, E or Y and not preceeded by G"},
+	metaphoneTest{transformG, "august", "aukust", "should transform G to K"},
+	metaphoneTest{transformG, "aggrade", "akrade", "should transform G to K"},
+	metaphoneTest{dropH, "alriht", "alrit", "should drop H if after vowell and not before vowell"},
+	metaphoneTest{dropH, "that", "that", "should not drop H if after vowell"},
+	metaphoneTest{dropH, "chump", "chump", "should not drop H if not before vowell"},
+	metaphoneTest{transformCK, "check", "chek", "should transform CK to K"},
+	metaphoneTest{transformPH, "phone", "fone", "should transform PH to F"},
+	metaphoneTest{transformQ, "quack", "kuack", "should transform Q to K"},
+	metaphoneTest{transformS, "shack", "xhack", "should transform S to X if followed by H, IO, or IA"},
+	metaphoneTest{transformS, "sialagogues", "xialagogues", "should transform S to X if followed by H, IO, or IA"},
+	metaphoneTest{transformS, "asia", "axia", "should transform S to X if followed by H, IO, or IA"},
+	metaphoneTest{transformS, "substance", "substance", "should not transform S to X if not followed by H, IO, or IA"},
+	metaphoneTest{transformT, "dementia", "demenxia", "should transform T to X if followed by IA or IO"},
+	metaphoneTest{transformT, "abbreviation", "abbreviaxion", "should transform T to X if followed by IA or IO"},
+	metaphoneTest{transformT, "that", "0at", "should transform TH to 0"},
+	metaphoneTest{dropT, "backstitch", "backstich", "should drop T if followed by CH"},
+	metaphoneTest{transformV, "vestige", "festige", "should transform V to F"},
+	metaphoneTest{dropW, "bowl", "bol", "should drop W if not followed by vowell"},
+	metaphoneTest{dropW, "warsaw", "warsa", "should drop W if not followed by vowell"},
+	metaphoneTest{transformX, "xenophile", "senophile", "should transform X to S if at beginning"},
+	metaphoneTest{transformX, "admixed", "admiksed", "should transform X to KS if not at beginning"},
+	metaphoneTest{dropY, "analyzer", "analzer", "should drop Y if not followed by a vowell"},
+	metaphoneTest{dropY, "specify", "specif", "should drop Y if not followed by a vowell"},
+	metaphoneTest{dropY, "allying", "allying", "should not drop Y if followed by a vowell"},
+	metaphoneTest{transformZ, "blaze", "blase", "should transform Z to S"},
+	metaphoneTest{dropVowels, "ablaze", "ablz", "should drop all vowels except initial"},
+	metaphoneTest{dropVowels, "adamantium", "admntm", "should drop all vowels except initial"},
+	metaphoneTest{Metaphone, "ablaze", "ABLS", "should do all"},
+	metaphoneTest{Metaphone, "transition", "TRNSXN", "should do all"},
+	metaphoneTest{Metaphone, "astronomical", "ASTRNMKL", "should do all"},
+	metaphoneTest{Metaphone, "buzzard", "BSRT", "should do all"},
+	metaphoneTest{Metaphone, "wonderer", "WNTRR", "should do all"},
+	metaphoneTest{Metaphone, "district", "TSTRKT", "should do all"},
+	metaphoneTest{Metaphone, "hockey", "HK", "should do all"},
+	metaphoneTest{Metaphone, "capital", "KPTL", "should do all"},
+	metaphoneTest{Metaphone, "penguin", "PNKN", "should do all"},
+	metaphoneTest{Metaphone, "garbonzo", "KRBNS", "should do all"},
+	metaphoneTest{Metaphone, "lightning", "LTNNK", "should do all"},
+	metaphoneTest{Metaphone, "light", "LT", "should do all"},
 }
 
 func TestMetaphone(t *testing.T) {
@@ -86,15 +92,45 @@ func TestMetaphone(t *testing.T) {
 }
 
 func TestMetaphoneWithMaxLength(t *testing.T) {
-  // should truncate to length specified if code exceeds
-  v := ProcessWithMaxLength("phonetics", 4)
-  if v != "FNTK" {
-    t.Errorf("ProcessWithMaxLength(\"phonetics\", 4) = %s, expected %s.", v, "FNTK");
-  }
-  
-  // should not truncate to length specified if code does not exceed
-  v = ProcessWithMaxLength("phonetics", 8)
-  if v != "FNTKS" {
-    t.Errorf("ProcessWithMaxLength(\"phonetics\", 8) = %s, expected %s.", v, "FNTKS");
-  }
+	// should truncate to length specified if code exceeds
+	v := ProcessWithMaxLength("phonetics", 4)
+	if v != "FNTK" {
+		t.Errorf("ProcessWithMaxLength(\"phonetics\", 4) = %s, expected %s.", v, "FNTK")
+	}
+
+	// should not truncate to length specified if code does not exceed
+	v = ProcessWithMaxLength("phonetics", 8)
+	if v != "FNTKS" {
+		t.Errorf("ProcessWithMaxLength(\"phonetics\", 8) = %s, expected %s.", v, "FNTKS")
+	}
+}
+
+func TestDoubleMetaphone(t *testing.T) {
+	// load gzipped corpus
+	f, err := os.Open("double_metaphone_corpus.txt.gz")
+	if err != nil {
+		panic("Error opening file double_metaphone_corpus.txt.gz! Exiting.")
+	}
+	defer f.Close()
+
+	g, err := gzip.NewReader(f)
+	if err != nil {
+		panic("Error with supposedly gzipped file double_metaphone_corpus.txt.gz! Exiting.")
+	}
+
+	r := bufio.NewReader(g)
+
+	line, err := r.ReadString('\n')
+	for err == nil {
+		line = strings.TrimRight(line, "\n")
+		v := strings.Split(line, "|")
+
+		metaphone, alternate := DoubleMetaphone(v[0])
+		if metaphone != v[1] || alternate != v[2] {
+			t.Errorf("DoubleMetaphone('%s') = (%v, %v), want (%v, %v)", v[0], metaphone, alternate, v[1], v[2])
+			t.FailNow()
+		}
+
+		line, err = r.ReadString('\n')
+	}
 }
