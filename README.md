@@ -1,29 +1,40 @@
-Metaphone package for Go
-======================
+# Metaphone
+Metaphone and double metaphone alogrithm implementaion in Golang.
+More information about this algorithm can be found on Wikipedia at
+http://en.wikipedia.org/wiki/Metaphone.
 
-A port of `metaphone` module from the Natural javascript package: <https://github.com/NaturalNode/natural/blob/master/lib/natural/phonetics/metaphone.js>
+## Install
+    go get github.com/vividvilla/metaphone
 
-Also see the wikipedia article on metaphone: <http://en.wikipedia.org/wiki/Metaphone>
+## Example
+    // test.go
+    package main
 
-Installation
--------------
+    import (
+        "fmt"
 
-    go install github.com/sanjayc77/metaphone 
+        "github.com/vividvilla/metaphone"
+    )
 
-This will install the `metaphone` package.
+    func main() {
+        inp := "Bangalore"
+        mp := metaphone.Metaphone(inp)
+        fmt.Printf("metaphone for input %s : %s \n", inp, mp)
 
-Example
--------
+        mp, alt := metaphone.DoubleMetaphone(inp)
+        fmt.Printf("doublemetaphone for input %s : %s %s \n", inp, mp, alt)
+    }
 
-    import "metaphone"
+## Run
+    go run test.go
 
-    st := metaphone.Process("phonetics")  // => FNTKS
+## Output
+	metaphone for input Bangalore : BNKLR
+	doublemetaphone for input Bangalore : PNKL PNKL
 
-Tests
------
+## test
+    go test github.com/vividvilla/metaphone
 
-    go test metaphone
-
-TODO
-----
-Precompile the regular expressions for faster processing.
+## Credits
+- [Metaphone](https://github.com/sanjayc77/metaphone)
+- [Matchr](https://github.com/antzucaro/matchr)
